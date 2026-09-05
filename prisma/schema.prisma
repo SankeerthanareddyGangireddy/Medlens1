@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  USER_PROVIDED
+  REPORT_EXTRACTED
+  AI_GENERATED
+  USER_VERIFIED
+}
+
+enum ProcessingStatus {
+  UPLOADED
+  PROCESSING
+  EXTRACTING
+  VALIDATING
+  READY_FOR_REVIEW
+  VERIFIED
+  FAILED
+}
+
+enum LabStatus {
+  LOW
+  NORMAL
+  HIGH
+  NOT_ASSESSED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  FLAGGED
+  EDITED
+}
+
+enum ConflictSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ConflictStatus {
+  OPEN
+  RESOLVED
+}
+
+enum ClarificationStatus {
+  OPEN
+  ANSWERED
+  DISMISSED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         String     @default("REVIEWER")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  patients     Patient[]
+  auditLogs    AuditLog[]
+}
+
+model Patient {
+  id                  String               @id @default(cuid())
+  ownerId             String
+  owner               User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  medicalRecordNumber String               @unique
+  fullName            String
+  dateOfBirth         DateTime
+  sex                 String
+  email               String?
+  phone               String?
+  notes               String?
+  isDemo              Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  symptoms            PatientSymptom[]
+  conditions          PatientCondition[]
+  allergies           PatientAllergy[]
+  medications         PatientMedication[]
+  documents           MedicalDocument[]
+  tests               MedicalTest[]
+  observations        Observation[]
+  medicationRecords   MedicationRecord[]
+  conditionRecords    ConditionRecord[]
+  conflicts           Conflict[]
+  clarifications      Clarification[]
+  summaries           AISummary[]
+  auditLogs           AuditLog[]
+  timelineEvents      TimelineEvent[]
+  extractionRuns      ExtractionRun[]
+
+  @@index([ownerId])
+  @@index([fullName])
+  @@index([medicalRecordNumber])
+}
+
+model PatientSymptom {
+  id         String     @id @default(cuid())
+  patientId  String
+  patient    Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name       String
+  notes      String?
+  sourceType SourceType @default(USER_PROVIDED)
+  createdAt  DateTime   @default(now())
+}
+
+model PatientCondition {
+  id         String     @id @default(cuid())
+  patientId  String
+  patient    Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name       String
+  notes      String?
+  sourceType SourceType @default(USER_PROVIDED)
+  createdAt  DateTime   @default(now())
+}
+
+model PatientAllergy {
+  id         String     @id @default(cuid())
+  patientId  String
+  patient    Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name       String
+  notes      String?
+  sourceType SourceType @default(USER_PROVIDED)
+  createdAt  DateTime   @default(now())
+}
+
+model PatientMedication {
+  id         String     @id @default(cuid())
+  patientId  String
+  patient    Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name       String
+  notes      String?
+  sourceType SourceType @default(USER_PROVIDED)
+  createdAt  DateTime   @default(now())
+}
+
+model MedicalDocument {
+  id                   String            @id @default(cuid())
+  patientId            String
+  patient              Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  filename             String
+  storedKey            String
+  mimeType             String
+  sizeBytes            Int
+  documentType         String
+  uploadDate           DateTime          @default(now())
+  reportDate           DateTime?
+  source               String            @default("UPLOAD")
+  processingStatus     ProcessingStatus  @default(UPLOADED)
+  extractedText        String?           @db.Text
+  pageCount            Int?
+  extractionConfidence Float?
+  failedStep           String?
+  errorMessage         String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  tests                MedicalTest[]
+  observations         Observation[]
+  medicationRecords    MedicationRecord[]
+  conditionRecords     ConditionRecord[]
+  extractionRuns       ExtractionRun[]
+  timelineEvents       TimelineEvent[]
+
+  @@index([patientId])
+  @@index([filename])
+  @@index([documentType])
+}
+
+model MedicalTest {
+  id                 String             @id @default(cuid())
+  patientId          String
+  patient            Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  documentId         String
+  document           MedicalDocument    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  testName           String
+  value              String?
+  numericValue       Float?
+  unit               String?
+  referenceLow       Float?
+  referenceHigh      Float?
+  referenceText      String?
+  observation        String?
+  reportDate         DateTime?
+  sourcePage         Int?
+  sourceText         String?
+  confidence         Float
+  sourceType         SourceType         @default(REPORT_EXTRACTED)
+  labStatus          LabStatus          @default(NOT_ASSESSED)
+  verificationStatus VerificationStatus @default(PENDING)
+  originalExtraction Json?
+  correctedValue     String?
+  correctedById      String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([patientId])
+  @@index([testName])
+  @@index([verificationStatus])
+  @@index([labStatus])
+}
+
+model Observation {
+  id         String          @id @default(cuid())
+  patientId  String
+  patient    Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  documentId String?
+  document   MedicalDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  category   String
+  content    String
+  sourcePage Int?
+  sourceText String?
+  confidence Float           @default(1)
+  sourceType SourceType      @default(REPORT_EXTRACTED)
+  createdAt  DateTime        @default(now())
+}
+
+model MedicationRecord {
+  id         String          @id @default(cuid())
+  patientId  String
+  patient    Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  documentId String?
+  document   MedicalDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  name       String
+  notes      String?
+  sourcePage Int?
+  sourceText String?
+  confidence Float           @default(1)
+  sourceType SourceType      @default(REPORT_EXTRACTED)
+  createdAt  DateTime        @default(now())
+}
+
+model ConditionRecord {
+  id         String          @id @default(cuid())
+  patientId  String
+  patient    Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  documentId String?
+  document   MedicalDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  name       String
+  notes      String?
+  sourcePage Int?
+  sourceText String?
+  confidence Float           @default(1)
+  sourceType SourceType      @default(REPORT_EXTRACTED)
+  createdAt  DateTime        @default(now())
+}
+
+model Conflict {
+  id          String           @id @default(cuid())
+  patientId   String
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type        String
+  severity    ConflictSeverity
+  description String
+  sourceA     Json
+  sourceB     Json
+  status      ConflictStatus   @default(OPEN)
+  resolution  String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([patientId, status])
+}
+
+model Clarification {
+  id           String               @id @default(cuid())
+  patientId    String
+  patient      Patient              @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type         String
+  question     String
+  relatedField String?
+  status       ClarificationStatus  @default(OPEN)
+  answer       String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([patientId, status])
+}
+
+model AISummary {
+  id               String   @id @default(cuid())
+  patientId        String
+  patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  content          String   @db.Text
+  model            String
+  provider         String
+  version          Int      @default(1)
+  sourceDocumentIds Json
+  createdAt        DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  details   String
+  createdAt DateTime @default(now())
+
+  @@index([patientId, createdAt])
+}
+
+model ExtractionRun {
+  id           String           @id @default(cuid())
+  patientId    String
+  patient      Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  documentId   String
+  document     MedicalDocument  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  provider     String
+  status       String
+  failedStep   String?
+  errorMessage String?
+  startedAt    DateTime         @default(now())
+  completedAt  DateTime?
+}
+
+model TimelineEvent {
+  id         String           @id @default(cuid())
+  patientId  String
+  patient    Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  documentId String?
+  document   MedicalDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  title      String
+  detail     String?
+  occurredAt DateTime
+  createdAt  DateTime         @default(now())
+
+  @@index([patientId, occurredAt])
+}
