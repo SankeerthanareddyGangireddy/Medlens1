@@ -3,19 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { 
-  Sparkles, 
   HelpCircle, 
   Bell, 
-  User, 
   ChevronLeft, 
-  Share2, 
-  Layers,
   Activity
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeProvider";
 import { getLocalizedJargon } from "@/lib/services/translator";
 import { DocumentViewerPane, DocumentReportItem } from "./DocumentViewerPane";
-import { BiomarkerTrendWidget, TrendSeries } from "./BiomarkerTrendWidget";
+import { BiomarkerTrendWidget } from "./BiomarkerTrendWidget";
 import { AddonFeaturesWidget } from "./AddonFeaturesWidget";
 import { StructuredSummaryWidget, AbnormalMetric } from "./StructuredSummaryWidget";
 import { QuickActionBar } from "./QuickActionBar";
@@ -172,6 +168,7 @@ export function MediReportDashboard({
                 onClick={() => setShowHelpModal(true)}
                 className="p-2 rounded-xl bg-white/80 hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white border border-slate-200 dark:border-slate-700 shadow-xs transition"
                 title="Dashboard Guide"
+                aria-label="Dashboard Guide"
               >
                 <HelpCircle className="w-4 h-4" />
               </button>
@@ -182,6 +179,7 @@ export function MediReportDashboard({
                   type="button"
                   className="p-2 rounded-xl bg-white/80 hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white border border-slate-200 dark:border-slate-700 shadow-xs transition"
                   title="Notifications"
+                  aria-label="Notifications"
                 >
                   <Bell className="w-4 h-4" />
                 </button>

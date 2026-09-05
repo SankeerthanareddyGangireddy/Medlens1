@@ -7,10 +7,7 @@ import {
   CheckCircle2, 
   Circle, 
   Plus, 
-  AlertCircle, 
-  Pill, 
-  ChevronRight,
-  Info
+  Pill
 } from "lucide-react";
 
 export type MedicationItem = {

@@ -10,7 +10,6 @@ import {
   Database, 
   Check, 
   Loader2,
-  ExternalLink,
   Code
 } from "lucide-react";
 

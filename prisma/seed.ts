@@ -7,6 +7,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("Seed failed");
+  console.error("Seed failed", error);
   process.exit(1);
 });

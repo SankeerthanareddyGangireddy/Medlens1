@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { SAFETY_FOOTER } from "@/lib/services/ai/types";
 import { Badge, Button, Card } from "@/components/ui";
-import { Languages, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { Volume2, VolumeX, Loader2 } from "lucide-react";
 
 export function AISummaryCard({
   content,

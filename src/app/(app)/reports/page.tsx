@@ -14,18 +14,28 @@ export default function ReportsPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
-    setLoading(true);
-    const res = await fetch(`/api/reports?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}`);
-    const data = await res.json();
-    if (!res.ok) setError(data.error);
-    else setReports(data.reports);
-    setLoading(false);
-  }
-
   useEffect(() => {
-    load();
-  }, []);
+    let active = true;
+    async function fetchReports() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/reports?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}`);
+        const data = await res.json();
+        if (active) {
+          if (!res.ok) setError(data.error);
+          else setReports(data.reports);
+        }
+      } catch (err: unknown) {
+        if (active) setError(err instanceof Error ? err.message : "Error loading reports");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    fetchReports();
+    return () => {
+      active = false;
+    };
+  }, [q, type]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">

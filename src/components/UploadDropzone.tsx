@@ -135,6 +135,7 @@ export function UploadDropzone({
         <div className="mt-4 rounded-xl border border-slate-200 p-4 text-sm">
           <div className="flex items-start gap-3">
             {preview ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={preview} alt="Document Preview" className="h-16 w-16 rounded-lg object-cover border border-slate-200" />
             ) : null}
             <div className="flex-1 min-w-0">

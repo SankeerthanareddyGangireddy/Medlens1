@@ -65,6 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition",
                     active
@@ -73,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4" aria-hidden />
+                    <Icon className="h-4 w-4" aria-hidden="true" />
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
@@ -87,9 +88,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/90 px-4 py-3 backdrop-blur transition-colors duration-200">
-            <div className="relative w-full max-w-xl">
-              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
+          <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/90 dark:border-slate-800 dark:bg-slate-900/90 px-4 py-3 backdrop-blur transition-colors duration-200" role="banner">
+            <div className="relative w-full max-w-xl" role="search">
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" aria-hidden="true" />
               <Input
                 className="pl-9 dark:bg-slate-800/90 dark:border-slate-700 dark:text-white dark:placeholder:text-slate-500"
                 placeholder="Search patients or reports"
@@ -101,10 +102,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 aria-label="Search patients or reports"
               />
               {open && (results.patients.length || results.reports.length) ? (
-                <div className="absolute mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                <div className="absolute mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800" role="listbox" aria-label="Search results">
                   {results.patients.map((p) => (
                     <button
                       key={p.id}
+                      role="option"
+                      aria-selected="false"
                       className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-700"
                       onClick={() => {
                         setOpen(false);

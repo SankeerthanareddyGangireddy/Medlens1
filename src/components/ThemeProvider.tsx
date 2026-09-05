@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -105,7 +105,7 @@ export function ThemeToggle({
     <button
       type="button"
       onClick={toggleTheme}
-      className={`relative inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/80 p-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-700 ${className}`}
+      className={`relative inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/80 font-semibold text-slate-700 shadow-xs transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-700 ${compact ? "p-1.5 text-[11px]" : "p-2 text-xs"} ${className}`}
       title={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} theme`}
       aria-label="Toggle dark mode"
     >

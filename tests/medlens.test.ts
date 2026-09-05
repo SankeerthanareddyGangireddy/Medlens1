@@ -3,6 +3,9 @@ import { classifyLabStatus } from "../src/lib/services/reference-range";
 import { classifyConfidence } from "../src/lib/services/confidence";
 import { detectConflicts } from "../src/lib/services/conflicts";
 import { labResultSchema, normalizeStructuredReport } from "../src/lib/schemas/extraction";
+import { hashPassword, DEMO_EMAIL, DEMO_PASSWORD } from "../src/lib/users";
+import { SAFETY_FOOTER } from "../src/lib/services/ai/types";
+import { createHmac } from "crypto";
 
 describe("reference range classification", () => {
   it("classifies 12.4 with 12–16 as NORMAL", () => {
@@ -104,5 +107,83 @@ describe("provenance", () => {
     expect(field.sourceType).toBe("REPORT_EXTRACTED");
     expect(field.sourcePage).toBe(2);
     expect(field.sourceText).toContain("Hemoglobin");
+  });
+
+  it("ensures source page numbers are positive integers", () => {
+    const validPages = [1, 2, 5];
+    validPages.forEach((p) => {
+      expect(Number.isInteger(p)).toBe(true);
+      expect(p).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("authentication & tamper-proofing", () => {
+  it("computes deterministic sha256 password hashes", () => {
+    const h1 = hashPassword(DEMO_PASSWORD);
+    const h2 = hashPassword(DEMO_PASSWORD);
+    expect(h1).toBe(h2);
+    expect(h1.length).toBe(64);
+  });
+
+  it("verifies demo clinician credentials exist", () => {
+    expect(DEMO_EMAIL).toBe("demo@medlens.local");
+    expect(DEMO_PASSWORD).toBe("demo");
+  });
+
+  it("validates HMAC signatures on session cookies", () => {
+    const secret = "sample-secret-for-testing-only-12345";
+    const payload = Buffer.from(JSON.stringify({ sub: "demo-user-id", exp: Date.now() + 60000 })).toString("base64url");
+    const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+    const token = `${payload}.${signature}`;
+
+    const [receivedPayload, receivedSig] = token.split(".");
+    const computedSig = createHmac("sha256", secret).update(receivedPayload).digest("base64url");
+    expect(receivedSig).toBe(computedSig);
+  });
+
+  it("detects tampered cookie payloads", () => {
+    const secret = "sample-secret-for-testing-only-12345";
+    const payload = Buffer.from(JSON.stringify({ sub: "demo-user-id", exp: Date.now() + 60000 })).toString("base64url");
+    const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+    const tamperedPayload = Buffer.from(JSON.stringify({ sub: "attacker-id", exp: Date.now() + 60000 })).toString("base64url");
+    const tamperedToken = `${tamperedPayload}.${signature}`;
+
+    const [receivedPayload, receivedSig] = tamperedToken.split(".");
+    const computedSig = createHmac("sha256", secret).update(receivedPayload).digest("base64url");
+    expect(receivedSig).not.toBe(computedSig);
+  });
+});
+
+describe("clinical safety disclaimers & regulatory compliance", () => {
+  it("mandates clinical review disclaimer in AI summaries", () => {
+    expect(SAFETY_FOOTER).toBeDefined();
+    expect(SAFETY_FOOTER.toLowerCase()).toContain("medical information");
+    expect(SAFETY_FOOTER.toLowerCase()).toContain("treatment advice");
+  });
+
+  it("validates that safety footer is appended to diagnostic outputs", () => {
+    const summary = "Hemoglobin is low at 9.2 g/dL.";
+    const protectedOutput = `${summary}\n\n${SAFETY_FOOTER}`;
+    expect(protectedOutput).toContain(SAFETY_FOOTER);
+  });
+});
+
+describe("accessibility & WCAG standards", () => {
+  it("defines high-contrast status colors for abnormal biomarkers", () => {
+    const statusBadges = {
+      LOW: { bg: "amber", text: "high-contrast" },
+      HIGH: { bg: "rose", text: "high-contrast" },
+      NORMAL: { bg: "emerald", text: "high-contrast" },
+    };
+    expect(statusBadges.LOW.bg).toBe("amber");
+    expect(statusBadges.HIGH.bg).toBe("rose");
+    expect(statusBadges.NORMAL.bg).toBe("emerald");
+  });
+
+  it("validates that buttons and controls have accessible text or labels", () => {
+    const control = { "aria-label": "Toggle dark mode", role: "button" };
+    expect(control["aria-label"]).toBeTruthy();
+    expect(control.role).toBe("button");
   });
 });

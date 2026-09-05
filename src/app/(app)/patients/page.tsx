@@ -18,18 +18,37 @@ export default function PatientsPage() {
     medications: "",
   });
 
-  async function load() {
+  const load = async () => {
     setLoading(true);
     const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}`);
     const data = await res.json();
     if (!res.ok) setError(data.error);
     else setPatients(data.patients);
     setLoading(false);
-  }
+  };
 
   useEffect(() => {
-    load();
-  }, []);
+    let active = true;
+    async function fetchPatients() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        if (active) {
+          if (!res.ok) setError(data.error);
+          else setPatients(data.patients);
+        }
+      } catch (err: unknown) {
+        if (active) setError(err instanceof Error ? err.message : "Error loading patients");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    fetchPatients();
+    return () => {
+      active = false;
+    };
+  }, [q]);
 
   async function createPatient(e: React.FormEvent) {
     e.preventDefault();
