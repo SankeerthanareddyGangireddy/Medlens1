@@ -61,7 +61,30 @@ export async function getSessionUser() {
   if (!token) return null;
   const payload = verify(token);
   if (!payload || payload.exp < Date.now()) return null;
-  return prisma.user.findUnique({ where: { id: payload.sub } });
+
+  if (payload.sub === "demo-user-id") {
+    return {
+      id: "demo-user-id",
+      email: DEMO_EMAIL,
+      name: "Demo Clinician",
+      role: "REVIEWER",
+    };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (user) return user;
+  } catch (error) {
+    console.warn("Database lookup failed in getSessionUser; falling back to demo user:", error);
+    return {
+      id: payload.sub,
+      email: DEMO_EMAIL,
+      name: "Demo Clinician",
+      role: "REVIEWER",
+    };
+  }
+
+  return null;
 }
 
 export async function requireUser() {
@@ -75,7 +98,12 @@ export async function requireUser() {
 }
 
 export async function getOwnedPatient(userId: string, patientId: string) {
-  return prisma.patient.findFirst({ where: { id: patientId, ownerId: userId } });
+  try {
+    return await prisma.patient.findFirst({ where: { id: patientId, ownerId: userId } });
+  } catch (error) {
+    console.warn("Database error in getOwnedPatient:", error);
+    return null;
+  }
 }
 
 export async function requireOwnedPatient(userId: string, patientId: string) {

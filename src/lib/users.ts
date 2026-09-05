@@ -10,14 +10,28 @@ export function hashPassword(password: string) {
 
 export async function ensureDemoUser() {
   const passwordHash = hashPassword(DEMO_PASSWORD);
-  return prisma.user.upsert({
-    where: { email: DEMO_EMAIL },
-    update: { passwordHash, name: "Demo Clinician" },
-    create: {
+  try {
+    return await prisma.user.upsert({
+      where: { email: DEMO_EMAIL },
+      update: { passwordHash, name: "Demo Clinician" },
+      create: {
+        email: DEMO_EMAIL,
+        name: "Demo Clinician",
+        passwordHash,
+        role: "REVIEWER",
+      },
+    });
+  } catch (error) {
+    console.warn("Database unavailable in ensureDemoUser; falling back to memory demo user:", error);
+    return {
+      id: "demo-user-id",
       email: DEMO_EMAIL,
       name: "Demo Clinician",
       passwordHash,
-      role: "REVIEWER",
-    },
-  });
+      role: "REVIEWER" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
 }
+

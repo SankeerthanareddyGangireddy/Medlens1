@@ -1,5 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
+import os from "os";
 import { randomUUID } from "crypto";
 import { sanitizeFilename } from "@/lib/utils";
 
@@ -14,7 +15,12 @@ export interface StorageService {
 
 class LocalStorageService implements StorageService {
   private dir() {
-    return path.resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.UPLOAD_DIR || "./uploads");
+    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+      return path.join(os.tmpdir(), "medlens-uploads");
+    }
+    const uploadDir = process.env.UPLOAD_DIR || "./uploads";
+    if (path.isAbsolute(uploadDir)) return uploadDir;
+    return path.resolve(/*turbopackIgnore: true*/ process.cwd(), uploadDir);
   }
 
   async save(input: { filename: string; buffer: Buffer }): Promise<StoredFile> {
